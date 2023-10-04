@@ -69,6 +69,13 @@ const detalharUsuario = (req, res) => {
     return res.json(req.usuario);
 }
 
+
+
+const listarCategorias = async (req, resp) => {
+
+    console.log('teste')
+}
+
 module.exports = {
     cadastrarUsuario,
     fazerLogin,
