@@ -1,6 +1,7 @@
 const pool = require('../banco_de_dados/conexao');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const senhaSegura = require('../chavesecreta');
 
 const cadastrarUsuario = async (req, res) => {
     try {
@@ -31,6 +32,40 @@ const cadastrarUsuario = async (req, res) => {
     }
 }
 
+const fazerLogin = async (req, res) => {
+    try {
+        const { email, senha } = req.body;
+
+        if (!email || !senha) {
+            return res.status(400).json({ mensagem: "O preenchimento de todos os campos são obrigatórios." });
+        }
+
+        const usuarioExistente = await pool.query(
+            'select * from usuarios where email = $1', [email]
+        );
+
+        if (usuarioExistente.rowCount < 1) {
+            return res.status(400).json({ mensagem: "Email ou senha informados são inválidos." });
+        }
+
+        if (!await bcrypt.compare(senha, usuarioExistente.rows[0].senha)) {
+            return res.status(400).json({ mensagem: 'E-mail ou senha informados são inválidos.' })
+        }
+
+        const { senha: _, ...usuario } = usuarioExistente.rows[0];
+
+        const token = jwt.sign(usuario, senhaSegura, { 'expiresIn': '2h' });
+
+        return res.status(200).json({
+            usuario,
+            token
+        });
+    } catch (error) {
+        return res.status(400).json({ mensagem: error.message });
+    }
+}
+
 module.exports = {
-    cadastrarUsuario
+    cadastrarUsuario,
+    fazerLogin
 }
