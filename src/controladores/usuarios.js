@@ -73,8 +73,35 @@ const detalharUsuario = async (req, res) => {
     }
 }
 
-const atualizarUsuario = (req, res) => {
+const atualizarUsuario = async (req, res) => {
+    try {
+        const { id } = req.usuario;
+        const { nome, email, senha } = req.body;
 
+        if (!nome || !email || !senha) {
+            return res.status(400).json({ mensagem: "O preenchimento de todos os campos são obrigatórios." });
+        }
+
+        const emailJaExistente = await pool.query(
+            'select * from usuarios where email = $1 and id <> $2', [email, id]
+        );
+
+        if (emailJaExistente.rowCount > 0) {
+            return res.status(400).json({ mensagem: "Esse email já pertence a outro usuário." })
+        }
+
+        const senhaCriptografada = await bcrypt.hash(senha, 10);
+
+        await pool.query(
+            'update usuarios set nome = $1, email = $2, senha = $3 where id = $4',
+            [nome, email, senhaCriptografada, id]
+        );
+
+        return res.status(204).send();
+    } catch (error) {
+        console.error("Erro ao atualizar o usuário:", error);
+        return res.status(500).json({ mensagem: error.message });
+    }
 }
 
 module.exports = {
