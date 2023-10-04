@@ -65,7 +65,12 @@ const fazerLogin = async (req, res) => {
     }
 }
 
+const detalharUsuario = (req, res) => {
+    return res.json(req.usuario);
+}
+
 module.exports = {
     cadastrarUsuario,
-    fazerLogin
+    fazerLogin,
+    detalharUsuario
 }
