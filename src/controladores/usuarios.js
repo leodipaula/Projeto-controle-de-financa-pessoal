@@ -65,12 +65,21 @@ const fazerLogin = async (req, res) => {
     }
 }
 
-const detalharUsuario = (req, res) => {
-    return res.json(req.usuario);
+const detalharUsuario = async (req, res) => {
+    try {
+        return res.json(req.usuario);
+    } catch (error) {
+        return res.status(400).json({ mensagem: error.message });
+    }
+}
+
+const atualizarUsuario = (req, res) => {
+
 }
 
 module.exports = {
     cadastrarUsuario,
     fazerLogin,
-    detalharUsuario
+    detalharUsuario,
+    atualizarUsuario
 }
