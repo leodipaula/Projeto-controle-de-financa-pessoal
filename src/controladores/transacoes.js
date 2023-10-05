@@ -45,7 +45,61 @@ const listarTransacoes = async (req, res) => {
     }
 }
 
+
+const detalharTransacoes = async (req, resp) => {
+    const { id } = req.params
+
+
+    const verificaId = await pool.query('select * from transacoes where id = $1', [id])
+    if (verificaId.rows < 1) {
+        return resp.status(404).json({ mensagem: "Transação não encontrada." })
+    }
+
+    try {
+        return resp.status(200).json(verificaId.rows[0])
+
+    }
+    catch (error) {
+        return resp.status(500).json("Erro interno do servidor.")
+    }
+
+}
+
+
+const cadastrarTransacao = async (req, resp) => {
+
+    const { descricao, valor, data, categoria_id, tipo } = req.body
+
+    if (!descricao || !valor || !data || !categoria_id || !tipo) {
+        return resp.status(400).json({ mensagem: "Todos os dados são obrigatórios" })
+    }
+
+    const validaCategoria = await pool.query('select * from transacoes where categoria_id = $1', [categoria_id])
+    if (validaCategoria.rows < 1) {
+        return resp.status(500).json("Erro interno do servidor")
+    }
+
+    if (tipo !== entrada || tipo !== saida) {
+        return resp.status(500).json("Erro interno do servidor")
+    }
+    else {
+
+        try {
+            const cadastro = await pool.query('insert into transacoes (descricao, valor, data,categoria_id, tipo) values($1,$2,$3,$4,$5', [descricao, valor, data, categoria_id, tipo])
+            return resp.status(201).json(validaCategoria.rows[0])
+        }
+
+        catch (error) {
+            return resp.status(500).json("Erro interno do servidor")
+        }
+    }
+}
+
+
+
 module.exports = {
     listarCategorias,
-    listarTransacoes
+    listarTransacoes,
+    detalharTransacoes,
+    cadastrarTransacao
 }

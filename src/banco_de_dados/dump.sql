@@ -18,6 +18,7 @@ create table transacoes (
   data date not null,
   categoria_id integer not null references categorias(id),
   usuario_id integer not null references usuarios(id),
+  categoria_nome text not null,
   tipo text not null
 );
 
