@@ -172,11 +172,37 @@ const deletarTransacao = async (req, res) => {
     }
 }
 
+const emitirExtrato = async (req, res) => {
+    try {
+        const { id } = req.usuario.id;
+
+        const entradaQuery = await pool.query(
+            'SELECT COALESCE(SUM(valor), 0) AS entrada FROM transacoes WHERE usuario_id = $1 AND tipo = $2',
+            [id, 'entrada']
+        );
+        const { entrada: entradaTotal } = entradaQuery.rows[0];
+
+        const saidaQuery = await pool.query(
+            'SELECT COALESCE(SUM(valor), 0) AS saida FROM transacoes WHERE usuario_id = $1 AND tipo = $2',
+            [id, 'saida']
+        );
+        const { saida: saidaTotal } = saidaQuery.rows[0];
+
+        return res.status(200).json({
+            entrada: entradaTotal,
+            saida: saidaTotal
+        });
+    } catch (error) {
+        return res.status(500).json({ mensagem: error.message });
+    }
+}
+
 module.exports = {
     listarCategorias,
     listarTransacoes,
     detalharTransacoes,
     cadastrarTransacao,
     atualizarTransacao,
-    deletarTransacao
+    deletarTransacao,
+    emitirExtrato
 }
