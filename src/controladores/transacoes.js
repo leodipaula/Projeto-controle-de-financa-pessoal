@@ -95,11 +95,67 @@ const cadastrarTransacao = async (req, resp) => {
     }
 }
 
+const atualizarTransacao = async (req, res) => {
+    try {
+        const usuarioID = req.usuario.id;
+        const transacaoID = req.params.id;
+        const { descricao, valor, data, categoria_id, tipo } = req.body;
 
+        if (!descricao || !valor || !data || !categoria_id || !tipo) {
+            return res.status(400).json({
+                mensagem: 'Todos os campos (descricao, valor, data, categoria_id, tipo) são obrigatórios.'
+            });
+        }
+
+        const transacaoQuery = await pool.query(
+            'select * from transacoes where id = $1 and usuario_id = $2',
+            [transacaoID, usuarioID]
+        );
+        const transacao = transacaoQuery.rows[0];
+
+        if (!transacao) {
+            return res.status(404).json({
+                mensagem: 'Transação informada não existe.'
+            });
+        }
+
+        const categoriaQuery = await pool.query('select * from categorias where id = $1',
+            [categoria_id]
+        );
+        const categoria = categoriaQuery.rows[0];
+
+        if (!categoria) {
+            return res.status(400).json({
+                mensagem: 'Categoria não encontrada.'
+            });
+        }
+
+        if (tipo !== 'entrada' && tipo !== 'saida') {
+            return res.status(400).json({
+                mensagem: 'O campo "tipo" deve ser "entrada" ou "saida".'
+            });
+        }
+
+        await pool.query(
+            'update transacoes set descricao = $1, valor = $2, data = $3, categoria_id = $4, tipo = $5 where id = $6',
+            [descricao, valor, data, categoria_id, tipo, transacaoID]
+        );
+
+        return res.status(204).send();
+    } catch (error) {
+        return res.status(500).json({ mensagem: error.message });
+    }
+}
+
+const deletarTransacao = async (req, res) => {
+
+}
 
 module.exports = {
     listarCategorias,
     listarTransacoes,
     detalharTransacoes,
-    cadastrarTransacao
+    cadastrarTransacao,
+    atualizarTransacao,
+    deletarTransacao
 }
