@@ -148,7 +148,28 @@ const atualizarTransacao = async (req, res) => {
 }
 
 const deletarTransacao = async (req, res) => {
+    try {
+        const usuarioID = req.usuario.id;
+        const transacaoID = req.params.id;
 
+        const transacaoQuery = await pool.query(
+            'select * from transacoes where id = $1 and usuario_id = $2',
+            [transacaoID, usuarioID]
+        );
+        const transacao = transacaoQuery.rows[0];
+
+        if (!transacao) {
+            return res.status(404).json({
+                mensagem: 'Transação não encontrada ou não pertence ao usuário logado.'
+            });
+        }
+
+        await pool.query('delete from transacoes where id = $1', [transacaoID]);
+
+        return res.status(204).send();
+    } catch (error) {
+        return res.status(500).json({ mensagem: error.message });
+    }
 }
 
 module.exports = {
