@@ -13,11 +13,15 @@ const listarCategorias = async (req, res) => {
 
 const listarTransacoes = async (req, res) => {
     try {
-        const { id } = req.body;
+        const { id } = req.usuario;
 
         const { rows, rowCount } = await pool.query(
             'select * from transacoes where usuario_id = $1', [id]
         );
+
+        if (rowCount < 1) {
+            return res.status(400).json({ mensagem: "Não foi encontrado transações em sua conta." });
+        }
 
         const listaDasTransacoes = rows.map(transacao => ({
             id: transacao.id,
@@ -27,7 +31,7 @@ const listarTransacoes = async (req, res) => {
             data: transacao.data,
             usuario_id: transacao.usuario_id,
             categoria_id: transacao.categoria_id,
-            categoria_nome: nome_categoria
+            categoria_nome: transacao.categoria_nome,
         }));
 
         return res.status(200).json({ listaDasTransacoes });
@@ -37,59 +41,58 @@ const listarTransacoes = async (req, res) => {
 }
 
 
-const detalharTransacoes = async (req, resp) => {
-    const { id } = req.params
-
-
-    const verificaId = await pool.query('select * from transacoes where id = $1', [id])
-    if (verificaId.rows < 1) {
-        return resp.status(404).json({ mensagem: "Transação não encontrada." })
-    }
-
+const detalharTransacoes = async (req, res) => {
     try {
-        return resp.status(200).json(verificaId.rows[0])
+        const { id: idUsuario } = req.usuario;
+        const { id: idTransacao } = req.params;
 
+        const transacao = await pool.query(
+            'select * from transacoes where id = $1 and usuario_id = $2', [idTransacao, idUsuario]
+        );
+
+        if (transacao.rows.length < 1) {
+            return res.status(404).json({ mensagem: "Transação não encontrada." })
+        }
+
+        return res.status(200).json(transacao.rows[0]);
     }
     catch (error) {
-        return resp.status(500).json("Erro interno do servidor.")
+        return res.status(500).json({ mensagem: error.message });
     }
 }
 
 
-const cadastrarTransacao = async (req, resp) => {
+const cadastrarTransacao = async (req, res) => {
+    try {
+        const { id } = req.usuario;
+        const { descricao, valor, data, categoria_id, tipo } = req.body;
 
-    const { descricao, valor, data, categoria_id, tipo } = req.body
-
-    if (!descricao || !valor || !data || !categoria_id || !tipo) {
-        return resp.status(400).json({ mensagem: "Todos os dados são obrigatórios" })
-    }
-
-    const validaCategoria = await pool.query('select * from transacoes where categoria_id = $1', [categoria_id])
-    if (validaCategoria.rows < 1) {
-        return resp.status(500).json("Erro interno do servidor")
-    }
-
-    if (tipo !== entrada || tipo !== saida) {
-        return resp.status(500).json("Erro interno do servidor")
-    }
-    else {
-
-        try {
-            const cadastro = await pool.query('insert into transacoes (descricao, valor, data,categoria_id, tipo) values($1,$2,$3,$4,$5', [descricao, valor, data, categoria_id, tipo])
-            return resp.status(201).json(validaCategoria.rows[0])
+        if (!descricao || !valor || !data || !categoria_id || !tipo) {
+            return res.status(400).json({ mensagem: "Todos os campos obrigatórios devem ser informados." });
         }
 
-        catch (error) {
-            return resp.status(500).json("Erro interno do servidor")
+        const categoriaQuery = await pool.query('SELECT * FROM categorias WHERE id = $1', [categoria_id]);
+        const categoria = categoriaQuery.rows[0];
+
+        if (!categoria) {
+            return res.status(404).json({ mensagem: 'Categoria não encontrada.' });
         }
+
+        if (tipo !== 'entrada' && tipo !== 'saida') {
+            return res.status(400).json({ mensagem: 'O campo "tipo" deve ser "entrada" ou "saida".' });
+        }
+
+        const result = await pool.query(
+            'INSERT INTO transacoes (descricao, valor, data, categoria_id, usuario_id, tipo) VALUES ($1, $2, $3, $4, $5, $6) returning *',
+            [descricao, valor, data, categoria_id, id, tipo]
+        );
+
+        return res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.log(error.message)
+        return res.status(500).json({ mensagem: "Erro interno do servidor" });
     }
 }
-
-
-
-
-
-
 
 const atualizarTransacao = async (req, res) => {
     try {
@@ -142,9 +145,6 @@ const atualizarTransacao = async (req, res) => {
         return res.status(500).json({ mensagem: error.message });
     }
 }
-
-
-
 
 const deletarTransacao = async (req, res) => {
     try {
@@ -203,6 +203,5 @@ module.exports = {
     cadastrarTransacao,
     atualizarTransacao,
     deletarTransacao,
-    emitirExtrato,
-
+    emitirExtrato
 }
