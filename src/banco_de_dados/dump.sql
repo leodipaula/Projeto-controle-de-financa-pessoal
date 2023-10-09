@@ -1,3 +1,5 @@
+create database dindin;
+
 create table usuarios (
   id serial primary key unique,
   nome text not null,
@@ -7,7 +9,6 @@ create table usuarios (
 
 create table categorias (
   id serial primary key unique,
-  usuario_id integer references usuarios(id),
   descricao text not null
 );
   

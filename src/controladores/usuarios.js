@@ -45,11 +45,11 @@ const fazerLogin = async (req, res) => {
         );
 
         if (usuarioExistente.rowCount < 1) {
-            return res.status(400).json({ mensagem: "Email ou senha informados são inválidos." });
+            return res.status(401).json({ mensagem: "Email ou senha informados são inválidos." });
         }
 
         if (!await bcrypt.compare(senha, usuarioExistente.rows[0].senha)) {
-            return res.status(400).json({ mensagem: 'E-mail ou senha informados são inválidos.' })
+            return res.status(401).json({ mensagem: 'E-mail ou senha informados são inválidos.' })
         }
 
         const { senha: _, ...usuario } = usuarioExistente.rows[0];
@@ -61,7 +61,7 @@ const fazerLogin = async (req, res) => {
             token
         });
     } catch (error) {
-        return res.status(400).json({ mensagem: error.message });
+        return res.status(500).json({ mensagem: error.message });
     }
 }
 
@@ -69,7 +69,7 @@ const detalharUsuario = async (req, res) => {
     try {
         return res.json(req.usuario);
     } catch (error) {
-        return res.status(400).json({ mensagem: error.message });
+        return res.status(500).json({ mensagem: error.message });
     }
 }
 
@@ -99,7 +99,6 @@ const atualizarUsuario = async (req, res) => {
 
         return res.status(204).send();
     } catch (error) {
-        console.error("Erro ao atualizar o usuário:", error);
         return res.status(500).json({ mensagem: error.message });
     }
 }
