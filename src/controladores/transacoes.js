@@ -16,27 +16,28 @@ const listarTransacoes = async (req, res) => {
         const { id } = req.usuario;
 
         const { rows, rowCount } = await pool.query(
-            'select * from transacoes where usuario_id = $1', [id]
+            'SELECT * FROM transacoes WHERE usuario_id = $1',
+            [id]
         );
 
         if (rowCount < 1) {
             return res.status(400).json({ mensagem: "Não foi encontrado transações em sua conta." });
         }
 
-        const listaDasTransacoes = rows.map(transacao => ({
-            id: transacao.id,
-            tipo: transacao.tipo,
-            descricao: transacao.descricao,
-            valor: transacao.valor,
-            data: transacao.data,
-            usuario_id: transacao.usuario_id,
-            categoria_id: transacao.categoria_id,
-            categoria_nome: transacao.categoria_nome,
-        }));
+        // const listaDasTransacoes = rows.map(transacao => ({
+        //     id: transacao.id,
+        //     tipo: transacao.tipo,
+        //     descricao: transacao.descricao,
+        //     valor: transacao.valor,
+        //     data: transacao.data,
+        //     usuario_id: transacao.usuario_id,
+        //     categoria_id: transacao.categoria_id,
+        //     categoria_nome: transacao.categoria_nome
+        // }));
 
-        return res.status(200).json(listaDasTransacoes);
+        return res.status(200).json(rows);
     } catch (error) {
-        return res.status(500).json({ mensagem: error.message });
+        return res.status(500).json({ mensagem: "Erro interno do servidor" });
     }
 }
 
@@ -45,6 +46,10 @@ const detalharTransacoes = async (req, res) => {
     try {
         const { id: idUsuario } = req.usuario;
         const { id: idTransacao } = req.params;
+
+        if (!idTransacao) {
+            return res.status(400).json({ mensagem: "ID da transação não foi informado." });
+        }
 
         const transacao = await pool.query(
             'select * from transacoes where id = $1 and usuario_id = $2', [idTransacao, idUsuario]
@@ -71,15 +76,16 @@ const cadastrarTransacao = async (req, res) => {
             return res.status(400).json({ mensagem: "Todos os campos obrigatórios devem ser informados." });
         }
 
-        const categoriaQuery = await pool.query('SELECT * FROM categorias WHERE id = $1', [categoria_id]);
+        if (tipo !== 'entrada' && tipo !== 'saida') {
+            return res.status(400).json({
+                mensagem: 'O campo "tipo" deve ser "entrada" ou "saida".'
+            });
+        }
+        const categoriaQuery = await pool.query('SELECT descricao FROM categorias WHERE id = $1', [categoria_id]);
         const categoria = categoriaQuery.rows[0];
 
         if (!categoria) {
             return res.status(404).json({ mensagem: 'Categoria não encontrada.' });
-        }
-
-        if (tipo !== 'entrada' && tipo !== 'saida') {
-            return res.status(400).json({ mensagem: 'O campo "tipo" deve ser "entrada" ou "saida".' });
         }
 
         const result = await pool.query(
@@ -89,7 +95,7 @@ const cadastrarTransacao = async (req, res) => {
 
         return res.status(201).json(result.rows[0]);
     } catch (error) {
-        console.log(error.message)
+        console.log(error.message);
         return res.status(500).json({ mensagem: "Erro interno do servidor" });
     }
 }
@@ -99,6 +105,10 @@ const atualizarTransacao = async (req, res) => {
         const { id: usuarioID } = req.usuario;
         const { id: transacaoID } = req.params;
         const { descricao, valor, data, categoria_id, tipo } = req.body;
+
+        if (!transacaoID) {
+            return res.status(400).json({ mensagem: "ID da transação não foi informado." });
+        }
 
         if (!descricao || !valor || !data || !categoria_id || !tipo) {
             return res.status(400).json({
@@ -116,6 +126,10 @@ const atualizarTransacao = async (req, res) => {
             return res.status(404).json({
                 mensagem: 'Transação informada não existe.'
             });
+        }
+
+        if (transacao.usuario_id !== usuarioID) {
+            return res.status(400).json({ mensagem: 'o ID da transação encontrada pertence a outro usuario.' });
         }
 
         const categoriaQuery = await pool.query('select * from categorias where id = $1',
@@ -150,6 +164,10 @@ const deletarTransacao = async (req, res) => {
     try {
         const { id: usuarioID } = req.usuario;
         const { id: transacaoID } = req.params;
+
+        if (!transacaoID) {
+            return res.status(400).json({ mensagem: "ID da transação não foi informado." });
+        }
 
         const transacaoQuery = await pool.query(
             'select * from transacoes where id = $1 and usuario_id = $2',
