@@ -24,17 +24,6 @@ const listarTransacoes = async (req, res) => {
             return res.status(400).json({ mensagem: "Não foi encontrado transações em sua conta." });
         }
 
-        // const listaDasTransacoes = rows.map(transacao => ({
-        //     id: transacao.id,
-        //     tipo: transacao.tipo,
-        //     descricao: transacao.descricao,
-        //     valor: transacao.valor,
-        //     data: transacao.data,
-        //     usuario_id: transacao.usuario_id,
-        //     categoria_id: transacao.categoria_id,
-        //     categoria_nome: transacao.categoria_nome
-        // }));
-
         return res.status(200).json(rows);
     } catch (error) {
         return res.status(500).json({ mensagem: "Erro interno do servidor" });
