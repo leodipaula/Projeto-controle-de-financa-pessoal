@@ -106,10 +106,7 @@ const atualizarUsuario = async (req, res) => {
 
 
 
-const listarCategorias = async (req, resp) => {
 
-    console.log('teste')
-}
 
 module.exports = {
     cadastrarUsuario,
