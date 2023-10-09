@@ -34,7 +34,7 @@ const listarTransacoes = async (req, res) => {
             categoria_nome: transacao.categoria_nome,
         }));
 
-        return res.status(200).json({ listaDasTransacoes });
+        return res.status(200).json(listaDasTransacoes);
     } catch (error) {
         return res.status(500).json({ mensagem: error.message });
     }
@@ -188,8 +188,8 @@ const emitirExtrato = async (req, res) => {
         const { saida: saidaTotal } = saidaQuery.rows[0];
 
         return res.status(200).json({
-            entrada: entradaTotal,
-            saida: saidaTotal
+            entrada: +entradaTotal,
+            saida: +saidaTotal
         });
     } catch (error) {
         return res.status(500).json({ mensagem: error.message });
